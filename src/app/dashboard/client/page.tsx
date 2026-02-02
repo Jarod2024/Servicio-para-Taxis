@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 
-// 1. Definimos la interfaz para evitar el error "Unexpected any"
+// Interfaz para el tipado estricto y evitar el error "any"
 interface TripHistory {
   id: number;
   origin: string;
@@ -18,11 +18,9 @@ export default function ClientDashboard() {
   const [trip, setTrip] = useState({ origin: "", destination: "" })
   const [msg, setMsg] = useState({ text: "", isError: false })
   const [loading, setLoading] = useState(false)
-  
-  // SOLUCIÓN Imagen 2ddac0: Usamos la interfaz en lugar de <any[]>
   const [history, setHistory] = useState<TripHistory[]>([])
 
-  // SOLUCIÓN Imagen 2d05db: Definimos la función ANTES del useEffect y con useCallback
+  // Función para obtener el historial del cliente
   const fetchMyTrips = useCallback(async (userId: string) => {
     if (!userId) return;
     try {
@@ -35,6 +33,29 @@ export default function ClientDashboard() {
       console.error("Error al cargar historial", error)
     }
   }, [])
+
+  // NUEVA FUNCIÓN: Eliminar (cancelar) solicitud
+  const handleCancelTrip = async (tripId: number) => {
+    if (!confirm("¿Estás seguro de que deseas cancelar esta solicitud?")) return;
+
+    try {
+      const res = await fetch("/api/trips/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId })
+      });
+
+      if (res.ok) {
+        setMsg({ text: "✅ Solicitud eliminada correctamente", isError: false });
+        fetchMyTrips(user.id); // Refrescar la lista
+      } else {
+        const data = await res.json();
+        setMsg({ text: `❌ ${data.error}`, isError: true });
+      }
+    } catch (error) {
+      setMsg({ text: "❌ Error al conectar con el servidor", isError: true });
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -50,16 +71,14 @@ export default function ClientDashboard() {
       setUser({ id: savedId, name: savedName });
       fetchMyTrips(savedId);
 
-      // Polling de seguridad cada 10 segundos
+      // Polling cada 10 segundos para ver si un conductor acepta el viaje
       const interval = setInterval(() => fetchMyTrips(savedId), 10000);
       return () => clearInterval(interval);
     }
-    // Agregamos router y fetchMyTrips como dependencias para quitar el aviso naranja
   }, [router, fetchMyTrips]);
 
   const handleRequestTrip = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!trip.origin || !trip.destination || !user.id) {
       setMsg({ text: "⚠️ Por favor, completa todos los campos", isError: true });
       return;
@@ -78,7 +97,6 @@ export default function ClientDashboard() {
       })
 
       const data = await res.json()
-
       if (res.ok) {
         setMsg({ text: `✅ ¡Viaje solicitado! Tarifa: $${data.trip.fare}`, isError: false })
         fetchMyTrips(user.id);
@@ -113,7 +131,6 @@ export default function ClientDashboard() {
       </nav>
 
       <main className="max-w-2xl mx-auto py-12 px-6">
-        {/* Formulario de solicitud */}
         <div className="bg-white rounded-3xl shadow-xl p-8 mb-10 border border-slate-100">
             <h2 className="text-2xl font-extrabold text-slate-800 mb-6">Solicitar Viaje</h2>
             <form onSubmit={handleRequestTrip} className="space-y-4">
@@ -146,22 +163,42 @@ export default function ClientDashboard() {
             )}
         </div>
 
-        {/* Historial */}
-        <h3 className="text-lg font-bold text-slate-700 mb-4">Mis Viajes</h3>
+        <h3 className="text-lg font-bold text-slate-700 mb-4 ml-2">Mis Viajes</h3>
         <div className="grid gap-4">
-          {history.map((t) => (
-            <div key={t.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between">
-              <div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${t.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                  {t.status === 'PENDING' ? 'Pendiente' : 'Aceptado'}
-                </span>
-                <p className="text-sm font-bold mt-2">📍 {t.origin}</p>
-                <p className="text-sm text-slate-500">🏁 {t.destination}</p>
-              </div>
-              <p className="text-xl font-black text-slate-800">${t.fare}</p>
-            </div>
-          ))}
+  {history
+    .filter((t) => t.status !== 'CANCELLED') // Evita mostrar viajes eliminados
+    .map((t) => (
+      <div key={t.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center transition-all hover:shadow-md">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+              t.status === 'PENDING' 
+                ? 'bg-amber-100 text-amber-700' 
+                : 'bg-emerald-100 text-emerald-700'
+            }`}>
+              {t.status === 'PENDING' ? '⏳ Pendiente' : '✅ Aceptado'}
+            </span>
+          </div>
+          <p className="text-sm font-bold text-slate-700">📍 {t.origin}</p>
+          <p className="text-sm text-slate-500">🏁 {t.destination}</p>
         </div>
+
+        <div className="flex flex-col items-end gap-3">
+          <p className="text-xl font-black text-slate-800">${t.fare}</p>
+          
+          {/* Solo mostramos el botón si el viaje sigue pendiente */}
+          {t.status === 'PENDING' && (
+            <button 
+              onClick={() => handleCancelTrip(t.id)}
+              className="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors border border-red-100"
+            >
+              Eliminar
+            </button>
+          )}
+        </div>
+      </div>
+    ))}
+</div>
       </main>
     </div>
   )
