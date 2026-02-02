@@ -15,7 +15,6 @@ export default function LoginPage() {
     setMsg("")
 
     try {
-      // 1. Apuntamos a la ruta que configuramos
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -25,27 +24,26 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (res.ok) {
-  localStorage.setItem("token", data.token);
-  
-  // Guardamos usando los nombres que vienen en tu route.ts
-  const userRole = data.user.role; 
-  const userName = data.user.name;
+        // --- AQUÍ ESTÁ LA CORRECCIÓN CRÍTICA ---
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.user.id.toString()); // GUARDAMOS EL ID (Vital para el Dashboard)
+        localStorage.setItem("userName", data.user.name);
+        localStorage.setItem("userRole", data.user.role);
 
-  setMsg(`¡Bienvenido, ${userName}! 🚀`);
+        const userRole = data.user.role;
+        setMsg(`¡Bienvenido, ${data.user.name}! 🚀`);
 
-      setTimeout(() => {
-        // IMPORTANTE: Verifica si en tu DB guardaste "CLIENT" o "CLIENTE"
-       // Los strings deben ser EXACTOS
-        if (userRole === "DRIVER") {
-         router.push("/dashboard/driver");
-    } else if (userRole === "CLIENT") {
-      router.push("/dashboard/client");
-    } else {
-      // Si llega aquí es porque userRole no es ni "DRIVER" ni "CLIENT"
-      console.log("Rol no reconocido, enviando a admin:", userRole);
-      router.push("/dashboard/admin");
-    }
-  }, 1500);
+        setTimeout(() => {
+          // Redirección basada en Perfiles de Usuario
+          if (userRole === "DRIVER") {
+            router.push("/dashboard/driver");
+          } else if (userRole === "CLIENT") {
+            router.push("/dashboard/client");
+          } else {
+            console.log("Rol no reconocido:", userRole);
+            router.push("/dashboard/admin");
+          }
+        }, 1500);
       } else {
         setMsg(data.error || "Credenciales incorrectas")
       }
@@ -62,10 +60,7 @@ export default function LoginPage() {
         onSubmit={handleLogin} 
         className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md"
       >
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-          Bienvenido
-        </h1>
-        
+        <h1 className="text-3xl font-bold mb-2 text-center text-gray-800">Bienvenido</h1>
         <p className="text-gray-500 text-center mb-8">Ingresa tus credenciales para continuar</p>
 
         <div className="space-y-4">
@@ -73,7 +68,6 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
             <input
               type="email"
-              placeholder="tu@correo.com"
               required
               className="border p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-gray-800"
               onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +78,6 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
             <input
               type="password"
-              placeholder="••••••••"
               required
               className="border p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-gray-800"
               onChange={(e) => setPassword(e.target.value)}
@@ -101,24 +94,11 @@ export default function LoginPage() {
 
         {msg && (
           <div className={`mt-6 p-3 rounded-lg text-center text-sm font-semibold ${
-            msg.includes("exitoso") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+            msg.includes("Bienvenido") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
           }`}>
             {msg}
           </div>
         )}
-
-        <div className="mt-8 text-center border-t pt-6">
-          <p className="text-gray-600">
-            ¿No tienes cuenta?{" "}
-            <button 
-              type="button"
-              onClick={() => router.push("/register")}
-              className="text-blue-600 font-bold hover:underline"
-            >
-              Regístrate aquí
-            </button>
-          </p>
-        </div>
       </form>
     </div>
   )
