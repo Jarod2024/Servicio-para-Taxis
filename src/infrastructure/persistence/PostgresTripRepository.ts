@@ -46,7 +46,12 @@ async findAll(): Promise<Trip[]> {
   const res = await pool.query(query);
   return res.rows.map(row => this.mapRowToTrip(row));
 }
-
+// En PostgresTripRepository.ts
+async findByDriverId(driverId: number): Promise<Trip[]> {
+  const query = 'SELECT * FROM "Trip" WHERE driver_id = $1 ORDER BY id DESC';
+  const res = await pool.query(query, [driverId]);
+  return res.rows.map(row => this.mapRowToTrip(row));
+}
   // Cambia la firma de tu función privada para que acepte un objeto genérico sin usar 'any' directamente en el retorno
 private mapRowToTrip(row: Record<string, unknown>): Trip {
   return {

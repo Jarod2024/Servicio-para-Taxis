@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 
-// Interfaz para el tipado estricto y evitar el error "any"
 interface TripHistory {
   id: number;
   origin: string;
@@ -20,7 +19,6 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<TripHistory[]>([])
 
-  // Función para obtener el historial del cliente
   const fetchMyTrips = useCallback(async (userId: string) => {
     if (!userId) return;
     try {
@@ -34,10 +32,8 @@ export default function ClientDashboard() {
     }
   }, [])
 
-  // NUEVA FUNCIÓN: Eliminar (cancelar) solicitud
   const handleCancelTrip = async (tripId: number) => {
     if (!confirm("¿Estás seguro de que deseas cancelar esta solicitud?")) return;
-
     try {
       const res = await fetch("/api/trips/cancel", {
         method: "POST",
@@ -47,12 +43,12 @@ export default function ClientDashboard() {
 
       if (res.ok) {
         setMsg({ text: "✅ Solicitud eliminada correctamente", isError: false });
-        fetchMyTrips(user.id); // Refrescar la lista
+        fetchMyTrips(user.id);
       } else {
         const data = await res.json();
         setMsg({ text: `❌ ${data.error}`, isError: true });
       }
-    } catch (error) {
+    } catch {
       setMsg({ text: "❌ Error al conectar con el servidor", isError: true });
     }
   };
@@ -70,8 +66,6 @@ export default function ClientDashboard() {
     if (savedId && savedName) {
       setUser({ id: savedId, name: savedName });
       fetchMyTrips(savedId);
-
-      // Polling cada 10 segundos para ver si un conductor acepta el viaje
       const interval = setInterval(() => fetchMyTrips(savedId), 10000);
       return () => clearInterval(interval);
     }
@@ -103,7 +97,7 @@ export default function ClientDashboard() {
       } else {
         setMsg({ text: `❌ ${data.error}`, isError: true })
       }
-    } catch (err) {
+    } catch {
       setMsg({ text: "❌ Error de conexión", isError: true })
     } finally {
       setLoading(false)
@@ -111,94 +105,101 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <nav className="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <span className="text-white text-xl">🚕</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-800">TaxiApp Client</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <p className="text-sm text-slate-500">Hola, <span className="font-semibold text-slate-800">{user.name}</span></p>
-          <button 
+    <div className="relative min-h-screen bg-[#0f172a] text-white overflow-hidden pb-20">
+
+      {/* Blob fondo */}
+      <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-indigo-500/30 to-purple-500/30 blur-[100px] rounded-full -top-40 -left-40 animate-pulse"></div>
+
+      {/* Navbar */}
+      <nav className="relative z-10 backdrop-blur-xl bg-white/5 border-b border-white/10 px-8 py-5 flex justify-between items-center">
+        <h1 className="text-xl font-bold tracking-wide">🚕 TaxiApp Client</h1>
+        <div className="flex items-center gap-6">
+          <p className="text-sm text-slate-300">Hola, <span className="font-bold text-white">{user.name}</span></p>
+          <button
             onClick={() => { localStorage.clear(); router.push("/login"); }}
-            className="bg-red-50 text-red-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-red-100 transition"
+            className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition"
           >
             Salir
           </button>
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto py-12 px-6">
-        <div className="bg-white rounded-3xl shadow-xl p-8 mb-10 border border-slate-100">
-            <h2 className="text-2xl font-extrabold text-slate-800 mb-6">Solicitar Viaje</h2>
-            <form onSubmit={handleRequestTrip} className="space-y-4">
-              <input
-                type="text"
-                required
-                placeholder="Origen"
-                className="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none"
-                onChange={(e) => setTrip({ ...trip, origin: e.target.value })}
-              />
-              <input
-                type="text"
-                required
-                placeholder="Destino"
-                className="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none"
-                onChange={(e) => setTrip({ ...trip, destination: e.target.value })}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 rounded-2xl font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200"
-              >
-                {loading ? "Solicitando..." : "Pedir Taxi Ahora"}
-              </button>
-            </form>
-            {msg.text && (
-              <p className={`mt-4 text-center font-bold ${msg.isError ? "text-red-500" : "text-green-600"}`}>
-                {msg.text}
-              </p>
-            )}
-        </div>
+      <main className="relative z-10 max-w-2xl mx-auto py-14 px-6">
 
-        <h3 className="text-lg font-bold text-slate-700 mb-4 ml-2">Mis Viajes</h3>
-        <div className="grid gap-4">
-  {history
-    .filter((t) => t.status !== 'CANCELLED') // Evita mostrar viajes eliminados
-    .map((t) => (
-      <div key={t.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center transition-all hover:shadow-md">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-              t.status === 'PENDING' 
-                ? 'bg-amber-100 text-amber-700' 
-                : 'bg-emerald-100 text-emerald-700'
-            }`}>
-              {t.status === 'PENDING' ? '⏳ Pendiente' : '✅ Aceptado'}
-            </span>
-          </div>
-          <p className="text-sm font-bold text-slate-700">📍 {t.origin}</p>
-          <p className="text-sm text-slate-500">🏁 {t.destination}</p>
-        </div>
+        {/* Solicitar viaje */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[28px] p-8 shadow-2xl mb-12">
+          <h2 className="text-2xl font-extrabold mb-6">Solicitar Viaje</h2>
 
-        <div className="flex flex-col items-end gap-3">
-          <p className="text-xl font-black text-slate-800">${t.fare}</p>
-          
-          {/* Solo mostramos el botón si el viaje sigue pendiente */}
-          {t.status === 'PENDING' && (
-            <button 
-              onClick={() => handleCancelTrip(t.id)}
-              className="text-[10px] bg-red-50 text-red-600 px-3 py-1 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-colors border border-red-100"
+          <form onSubmit={handleRequestTrip} className="space-y-5">
+            <input
+              type="text"
+              required
+              placeholder="📍 Origen"
+              className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              onChange={(e) => setTrip({ ...trip, origin: e.target.value })}
+            />
+            <input
+              type="text"
+              required
+              placeholder="🏁 Destino"
+              className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              onChange={(e) => setTrip({ ...trip, destination: e.target.value })}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full p-4 rounded-2xl font-bold text-lg bg-gradient-to-br from-indigo-500 to-purple-500 hover:scale-[1.02] transition disabled:opacity-50"
             >
-              Eliminar
+              {loading ? "Solicitando..." : "Pedir Taxi Ahora"}
             </button>
+          </form>
+
+          {msg.text && (
+            <div className={`mt-6 text-center font-semibold text-sm ${
+              msg.isError ? "text-red-400" : "text-green-400"
+            }`}>
+              {msg.text}
+            </div>
           )}
         </div>
-      </div>
-    ))}
-</div>
+
+        {/* Historial */}
+        <h3 className="text-lg font-bold mb-5 text-slate-300">Mis Viajes</h3>
+
+        <div className="space-y-4">
+          {history.filter(t => t.status !== 'CANCELLED').map(t => (
+            <div key={t.id} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex justify-between items-center hover:border-indigo-500/40 transition">
+
+              <div>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  t.status === 'PENDING'
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                }`}>
+                  {t.status === 'PENDING' ? '⏳ Pendiente' : '✅ Aceptado'}
+                </span>
+
+                <p className="mt-3 font-semibold">📍 {t.origin}</p>
+                <p className="text-slate-400 text-sm">🏁 {t.destination}</p>
+              </div>
+
+              <div className="flex flex-col items-end gap-3">
+                <p className="text-2xl font-black text-white">${t.fare}</p>
+
+                {t.status === 'PENDING' && (
+                  <button
+                    onClick={() => handleCancelTrip(t.id)}
+                    className="text-xs px-3 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+
+            </div>
+          ))}
+        </div>
+
       </main>
     </div>
   )
