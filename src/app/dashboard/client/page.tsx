@@ -107,8 +107,8 @@ export default function ClientDashboard() {
   return (
     <div className="relative min-h-screen bg-[#0f172a] text-white overflow-hidden pb-20">
 
-      {/* Blob fondo */}
-      <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-indigo-500/30 to-purple-500/30 blur-[100px] rounded-full -top-40 -left-40 animate-pulse"></div>
+      {/* Blob de luz de fondo */}
+<div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-indigo-500/30 to-purple-500/30 blur-[100px] rounded-full animate-pulse"></div>
 
       {/* Navbar */}
       <nav className="relative z-10 backdrop-blur-xl bg-white/5 border-b border-white/10 px-8 py-5 flex justify-between items-center">

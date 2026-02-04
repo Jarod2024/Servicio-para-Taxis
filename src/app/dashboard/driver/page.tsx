@@ -87,70 +87,93 @@ export default function DriverDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <nav className="flex justify-between items-center mb-10 bg-white p-4 rounded-xl shadow-sm border">
-        <h1 className="text-xl font-bold text-gray-800">🚕 Panel de Conductor</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">Hola, <b className="text-green-600">{driver.name}</b></span>
-          <button onClick={() => { localStorage.clear(); router.push("/login"); }} className="text-red-600 text-sm font-bold hover:underline">Salir</button>
+  <div className="relative min-h-screen bg-[#0f172a] overflow-hidden px-6 py-10 text-white">
+
+    {/* Blob de luz de fondo */}
+<div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-indigo-500/30 to-purple-500/30 blur-[100px] rounded-full animate-pulse"></div>
+
+    <div className="relative z-10 max-w-6xl mx-auto">
+
+      {/* NAV */}
+      <nav className="flex justify-between items-center mb-12 bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-[28px] shadow-xl">
+        <h1 className="text-2xl font-extrabold tracking-tight">🚕 Panel del Conductor</h1>
+        <div className="flex items-center gap-5">
+          <span className="text-sm text-slate-300">
+            Hola, <b className="text-indigo-400">{driver.name}</b>
+          </span>
+          <button
+            onClick={() => { localStorage.clear(); router.push("/login"); }}
+            className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-semibold hover:bg-red-500/20 transition"
+          >
+            Cerrar sesión
+          </button>
         </div>
       </nav>
 
-      <div className="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto">
-        {/* Columna: Disponibles */}
+      <div className="grid lg:grid-cols-2 gap-10">
+
+        {/* VIAJES DISPONIBLES */}
         <section>
-          <h2 className="text-xl font-bold mb-6 text-gray-700 flex items-center gap-2">
-            <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></span>
-            Disponibles
-          </h2>
-          <div className="space-y-4">
-            {loading ? <p className="text-gray-400">Buscando viajes...</p> : trips.length === 0 ? (
-              <div className="p-10 border-2 border-dashed rounded-2xl text-center text-gray-400">
-                No hay viajes pendientes en tu zona.
-              </div>
-            ) : (
-              trips.map(t => (
-                <div key={t.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition">
-                  <div>
-                    <p className="font-bold text-gray-800">📍 {t.origin}</p>
-                    <p className="text-gray-500 text-sm">🏁 {t.destination}</p>
-                    <p className="text-green-600 font-black mt-2 text-lg">${t.fare}</p>
+          <h2 className="text-xl font-bold mb-6 text-indigo-400 tracking-wide">Viajes Disponibles</h2>
+
+          {loading ? (
+            <div className="text-center py-16 text-slate-400 animate-pulse">Buscando viajes...</div>
+          ) : trips.length === 0 ? (
+            <div className="p-12 border border-dashed border-white/10 rounded-3xl text-center text-slate-500 bg-white/5 backdrop-blur-xl">
+              No hay viajes disponibles ahora mismo.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {trips.map(t => (
+                <div key={t.id} className="bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl shadow-lg hover:bg-white/10 transition-all">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-lg">📍 {t.origin}</p>
+                      <p className="text-slate-400 text-sm">🏁 {t.destination}</p>
+                      <p className="text-indigo-400 font-extrabold mt-2 text-xl">${t.fare}</p>
+                    </div>
+                    <button
+                      onClick={() => handleAcceptTrip(t.id)}
+                      className="px-6 py-3 rounded-2xl font-bold text-white bg-gradient-to-br from-indigo-500 to-purple-500 hover:scale-[1.03] hover:shadow-[0_15px_25px_rgba(139,92,246,0.4)] transition"
+                    >
+                      Aceptar
+                    </button>
                   </div>
-                  <button onClick={() => handleAcceptTrip(t.id)} className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 active:scale-95 transition-all">
-                    Aceptar
-                  </button>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Columna: Mi Historial */}
+        {/* HISTORIAL */}
         <section>
-          <h2 className="text-xl font-bold mb-6 text-gray-700 flex items-center gap-2">
-            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-            Mi Historial
-          </h2>
-          <div className="space-y-4">
-            {history.length === 0 ? (
-              <p className="text-gray-400 italic bg-gray-100 p-6 rounded-2xl text-center">Aún no has aceptado ningún viaje.</p>
-            ) : (
-              history.map(h => (
-                <div key={h.id} className="bg-white p-4 rounded-xl flex justify-between items-center border border-gray-200 opacity-90">
+          <h2 className="text-xl font-bold mb-6 text-purple-400 tracking-wide">Mi Historial</h2>
+
+          {history.length === 0 ? (
+            <div className="p-12 rounded-3xl bg-white/5 backdrop-blur-xl text-center text-slate-500 border border-white/10">
+              Aún no has realizado viajes.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.map(h => (
+                <div key={h.id} className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-bold text-gray-700">📍 {h.origin} → {h.destination}</p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${h.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                    <p className="font-semibold text-white">📍 {h.origin} → {h.destination}</p>
+                    <span className="text-xs uppercase tracking-widest text-purple-300">
                       {h.status}
                     </span>
                   </div>
-                  <p className="font-black text-gray-600">${h.fare}</p>
+                  <p className="text-indigo-400 font-bold text-lg">${h.fare}</p>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
-      </div>
 
+      </div>
     </div>
-  )
+  </div>
+)
+
+
 }
